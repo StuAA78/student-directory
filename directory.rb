@@ -1,9 +1,18 @@
 @students = []
 
+@menu_options =
+  [
+    {option: 1, text: "Input the students", action: :input_students},
+    {option: 2, text: "Show the students", action: :show_students},
+    {option: 3, text: "Save the list to students.csv", action: :save_students},
+    {option: 4, text: "Load the list from students.csv", action: :load_students},
+    {option: 9, text: "Exit", action: :exit}
+  ]
+
 def input_students
   puts "Please enter the names of the students"
   puts "To finish, just hit return twice"
-  puts "Hit return straight away to use a default set of students"
+  puts "Hit return straight away to add a default set of students"
 
   # get the first name
   name = STDIN.gets.gsub(/\n/, "") # uses gsub instead of chomp to remove newline
@@ -11,7 +20,7 @@ def input_students
   # while the name is not empty, repeat this code
   while !name.empty? do
     # add the student hash to the array
-    @students << {name: name, cohort: :november}
+    add_student(name, :november)
     # set up the singular display string then make it plural if needed
     display_string = "Now we have #{@students.count} student"
     display_string.gsub!("student", "students") if @students.count > 1
@@ -22,6 +31,10 @@ def input_students
 
   # return default list if no students have been input
   @students = default_students if @students == []
+end
+
+def add_student(name,cohort)
+  @students << {name: name, cohort: cohort}
 end
 
 def default_students
@@ -58,16 +71,14 @@ end
 def interactive_menu
   loop do
     print_menu
-    process(STDIN.gets.chomp)
+    process_menu(STDIN.gets.chomp)
   end
 end
 
 def print_menu
-  puts "1. Input the students"
-  puts "2. Show the students"
-  puts "3. Save the list to students.csv"
-  puts "4. Load the list from students.csv"
-  puts "9. Exit" # 9 because we'll be adding more items
+  @menu_options.each do |opt|
+    puts "#{opt[:option]}. #{opt[:text]}"
+  end
 end
 
 def show_students
@@ -76,26 +87,14 @@ def show_students
   print_footer
 end
 
-def process(selection)
-  case selection
-  when "1"
-    input_students
-  when "2"
-    show_students
-  when "3"
-    save_students
-  when "4"
-    load_students
-  when "9"
-    exit # this will cause the program to terminate
-  else
-    puts "I don't know what you meant, try again"
-  end
+def process_menu(selection)
+  option = @menu_options.find {|x| x[:option] == selection.to_i}
+  option == nil ? puts("I don't know what you meant, try again") : send(option[:action])
 end
 
 def try_load_students
   filename = ARGV.first # first argument from the command line
-  return if filename.nil? # get out of the method if it isn't given
+  filename = "students.csv" if filename.nil? # get out of the method if it isn't given
   if File.exists?(filename) # if it exists
     load_students
     puts "Loaded #{@students.count} from #{filename}"
@@ -109,7 +108,7 @@ def load_students(filename = "students.csv")
   file = File.open(filename, "r")
   file.readlines.each do |line|
     name, cohort = line.chomp.split(",")
-    @students << { name: name, cohort: cohort.to_sym }
+    add_student(name, cohort.to_sym)
   end
   file.close
 end
