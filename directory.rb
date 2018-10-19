@@ -2,11 +2,11 @@
 
 @menu_options =
   [
-    {option: 1, text: "Input the students", action: :input_students},
-    {option: 2, text: "Show the students", action: :show_students},
-    {option: 3, text: "Save the list to students.csv", action: :save_students},
-    {option: 4, text: "Load the list from students.csv", action: :load_students},
-    {option: 9, text: "Exit", action: :exit}
+    {option: 1, text: "Input the students", action: "input_students"},
+    {option: 2, text: "Show the students", action: "show_students"},
+    {option: 3, text: "Save the list to a file", action: "save_from_menu"},
+    {option: 4, text: "Load the list from a file", action: "load_from_menu"},
+    {option: 9, text: "Exit", action: "exit"}
   ]
 
 def input_students
@@ -92,19 +92,24 @@ def process_menu(selection)
   option == nil ? puts("I don't know what you meant, try again") : send(option[:action])
 end
 
-def try_load_students
+def load_from_command_line
   filename = ARGV.first # first argument from the command line
   filename = "students.csv" if filename.nil? # get out of the method if it isn't given
+  # quit if try_load_students returns an error, but only if a filename was specified
+  exit if try_load_students(filename) == false && !ARGV.first.nil?
+end
+
+def try_load_students(filename)
   if File.exists?(filename) # if it exists
-    load_students
+    load_students(filename)
     puts "Loaded #{@students.count} from #{filename}"
   else # if it doesn't exist
     puts "Sorry, #{filename} doesn't exist."
-    exit # quit the program
+    false # return false to indicate an error
   end
 end
 
-def load_students(filename = "students.csv")
+def load_students(filename)
   file = File.open(filename, "r")
   file.readlines.each do |line|
     name, cohort = line.chomp.split(",")
@@ -113,9 +118,9 @@ def load_students(filename = "students.csv")
   file.close
 end
 
-def save_students
+def save_students(filename)
   # open the file for writing
-  file = File.open("students.csv", "w")
+  file = File.open(filename, "w")
   # iterate over the array of students
   @students.each do |student|
     student_data = [student[:name], student[:cohort]]
@@ -125,5 +130,19 @@ def save_students
   file.close
 end
 
-try_load_students
+def load_from_menu
+  try_load_students(get_filename)
+end
+
+def save_from_menu
+  save_students(get_filename)
+end
+
+def get_filename
+  puts "Enter filename (hit return for default of 'students.csv')"
+  filename = gets.chomp
+  filename.empty? ? "students.csv" : filename # default to students.csv if no filename given
+end
+
+load_from_command_line
 interactive_menu
